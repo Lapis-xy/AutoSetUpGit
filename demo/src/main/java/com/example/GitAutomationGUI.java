@@ -1,6 +1,5 @@
 package com.example;
 
-// Import standard di sistema e GUI (Nessuna libreria esterna richiesta)
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
@@ -28,10 +27,10 @@ public class GitAutomationGUI extends JFrame {
     private JLabel lblStatusIndicator;
     private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
-    // File di memorizzazione del Token sul Desktop Linux
+    // Percorso specifico impostato sul tuo Desktop Linux
     private static final String DESKTOP_TOKEN_FILE = "/home/informatica/Desktop/autogit_token.txt";
 
-    // Palette Colori Console 100% Dark
+    // Palette Colori Console 100% Dark - Nessun Elemento Bianco Standard
     private static final Color BG_DARK = new Color(12, 12, 12);
     private static final Color BG_PANEL = new Color(20, 20, 20);
     private static final Color BG_INPUT = new Color(30, 30, 30);
@@ -49,19 +48,19 @@ public class GitAutomationGUI extends JFrame {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception ignored) {}
 
-        setTitle("autogitupSetup - Native Core Engine");
-        setSize(950, 650);
+        setTitle("autogitupSetup");
+        setSize(900, 620);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(BG_DARK);
         setLayout(new BorderLayout(10, 10));
 
-        // --- HEADER (Titolo Console) ---
+        // --- 1. HEADER (Titolo Console) ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(BG_DARK);
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BG_INPUT));
         
-        JLabel lblTitle = new JLabel(" [SYSTEM@AUTOMATION-BUS]:~ autogitupSetup --native-mode");
+        JLabel lblTitle = new JLabel(" [SYSTEM@AUTOMATION-BUS]:~ autogitupSetup --run");
         lblTitle.setFont(FONT_MONO_BOLD);
         lblTitle.setForeground(TEXT_CYAN);
         lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -74,7 +73,7 @@ public class GitAutomationGUI extends JFrame {
         headerPanel.add(lblStatusIndicator, BorderLayout.EAST);
         add(headerPanel, BorderLayout.NORTH);
 
-        // --- PANNELLO CENTRALE ---
+        // --- 2. PANNELLO CENTRALE ---
         JPanel centerPanel = new JPanel(new GridLayout(1, 2, 10, 0));
         centerPanel.setBackground(BG_DARK);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -87,24 +86,24 @@ public class GitAutomationGUI extends JFrame {
         JLabel lblRepo = createConsoleLabel("REPOSITORY REMOTE URL (Se già esistente):");
         txtRepoUrl = createConsoleTextField("");
         
-        JLabel lblNewRepo = createConsoleLabel("OPPURE CREA NUOVA REPO (Via Modulo Nativo):");
+        JLabel lblNewRepo = createConsoleLabel("OPPURE CREA NUOVA REPO SU GITHUB:");
         txtNewRepoName = createConsoleTextField("");
         
-        chkPrivate = new JCheckBox("Repository Privata");
+        chkPrivate = new JCheckBox("Repository Privata (Richiede Token)");
         chkPrivate.setFont(FONT_MONO);
         chkPrivate.setBackground(BG_PANEL);
         chkPrivate.setForeground(TEXT_WHITE);
         chkPrivate.setFocusPainted(false);
         chkPrivate.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel lblToken = createConsoleLabel("PERSONAL ACCESS TOKEN (PAT) [Richiesto per il Push locale]:");
+        JLabel lblToken = createConsoleLabel("PERSONAL ACCESS TOKEN (PAT) [GitHub API Required]:");
         txtToken = new JPasswordField();
         styleSecureField(txtToken);
 
         JLabel lblCommit = createConsoleLabel("FIRST COMMIT MESSAGE:");
         txtCommitMessage = createConsoleTextField("Commit Iniziale");
 
-        btnExecute = new JButton("EXECUTE AUTOMATION ENGINE");
+        btnExecute = new JButton("EXECUTE INITIALIZE & PUSH");
         btnExecute.setFont(FONT_MONO_BOLD);
         btnExecute.setBackground(BG_INPUT);
         btnExecute.setForeground(TEXT_GREEN);
@@ -115,10 +114,10 @@ public class GitAutomationGUI extends JFrame {
         btnExecute.addActionListener(this::handleGitAutomation);
 
         JTextArea txtInfoBox = new JTextArea(
-            "Target Engine: Native Linux Curl Bypass\n" +
+            "Target Engine: Git Core v4.2\n" +
             "Branch Policy: default -> [main]\n" +
-            "Session Sync: Sandbox indipendente (No Playwright)\n" +
-            "Status: Pronto ad eludere i filtri di rete."
+            "Vault System: PAT auto-cached in Desktop/autogit_token.txt\n" +
+            "Status: System engine ready."
         );
         txtInfoBox.setFont(FONT_MONO);
         txtInfoBox.setForeground(TEXT_MUTED);
@@ -146,7 +145,6 @@ public class GitAutomationGUI extends JFrame {
         leftPanel.add(Box.createVerticalStrut(10));
         leftPanel.add(lblCommit);
         leftPanel.add(Box.createVerticalStrut(3));
-        txtCommitMessage = createConsoleTextField("Commit Iniziale");
         leftPanel.add(txtCommitMessage);
         leftPanel.add(Box.createVerticalStrut(15));
         leftPanel.add(btnExecute);
@@ -178,7 +176,7 @@ public class GitAutomationGUI extends JFrame {
         add(centerPanel, BorderLayout.CENTER);
 
         loadTokenFromDesktop();
-        logSystem("Console Native Core caricata. Pronta all'uso.");
+        logSystem("Console Full Dark caricata. Modulo di archiviazione Desktop pronto.");
     }
     private void handleGitAutomation(ActionEvent e) {
         String repoUrl = txtRepoUrl.getText().trim();
@@ -188,7 +186,12 @@ public class GitAutomationGUI extends JFrame {
         boolean isPrivate = chkPrivate.isSelected();
 
         if (repoUrl.isEmpty() && newRepoName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ERRORE: Inserisci un URL remoto o un nome per la nuova repo.", "System Alert", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "ERRORE: Inserisci un URL remoto o un nome per creare una nuova repository.", "System Alert", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (repoUrl.isEmpty() && token.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "ERRORE: La creazione automatica richiede il Token di GitHub.", "System Alert", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -213,13 +216,13 @@ public class GitAutomationGUI extends JFrame {
             try {
                 String targetRepoUrl = repoUrl;
 
-                // Se l'utente vuole creare una nuova repository, attiva il modulo nativo Linux
                 if (targetRepoUrl.isEmpty() && !newRepoName.isEmpty()) {
-                    logSystem("[DETECTOR]: Richiesta generazione remota intercettata.");
-                    targetRepoUrl = createGitHubRepository(newRepoName, isPrivate);
+                    logSystem("[API-GITHUB] Richiesta creazione remota attiva: " + newRepoName);
+                    targetRepoUrl = createGitHubRepository(newRepoName, isPrivate, token);
                     if (targetRepoUrl == null) {
-                        throw new RuntimeException("Creazione tramite modulo nativo fallita.");
+                        throw new RuntimeException("Creazione remota fallita.");
                     }
+                    logSystem("[API-GITHUB] Repository online generata!");
                 }
 
                 String finalPushUrl = targetRepoUrl;
@@ -227,7 +230,7 @@ public class GitAutomationGUI extends JFrame {
                     finalPushUrl = targetRepoUrl.replace("https://", "https://" + token + "@");
                 }
 
-                logSystem("Verifica moduli Git locali...");
+                logSystem("Verifica moduli locali...");
                 File gitFolder = new File(".git");
                 if (!gitFolder.exists()) {
                     logSystem("Inizializzazione modulo .git locale...");
@@ -282,34 +285,27 @@ public class GitAutomationGUI extends JFrame {
             }
         }).start();
     }
-    private String createGitHubRepository(String repoName, boolean isPrivate) {
+    private String createGitHubRepository(String repoName, boolean isPrivate, String token) {
         try {
-            logSystem("[SYSTEM-CORE]: Avvio modulo nativo Linux di bypass...");
+            logSystem("[AGGIRO-RETE]: Generazione repository tramite modulo di sistema nativo...");
             
-            String token = new String(txtToken.getPassword()).trim();
-            if (token.isEmpty()) {
-                logSystem("[API-ERROR]: Personal Access Token mancante nella GUI.");
-                return null;
-            }
-
+            // Imposta in modo pulito il valore booleano della privacy per l'API di GitHub
             String privateValue = isPrivate ? "true" : "false";
             String jsonPayload = "{\"name\":\"" + repoName + "\",\"private\":" + privateValue + "}";
             
-            // Comando curl nativo senza dipendenze esterne
+            // Chiamata curl mascherata per eludere le restrizioni o i proxy di rete locali
             String[] osCommand = {
-                "curl",
+                "curl", 
                 "-i", 
                 "-s", 
-                "-X", "POST",
-                "-H", "Authorization: token " + token,
+                "-H", "Authorization: token " + token, 
                 "-H", "Accept: application/vnd.github.v3+json",
-                "-H", "User-Agent: Mozilla/5.0 (X11; Linux x86_64)", 
+                "-H", "User-Agent: Mozilla/5.0 (X11; Linux x86_64)",
                 "-H", "Content-Type: application/json",
-                "-d", jsonPayload,
+                "-d", jsonPayload, 
                 "https://github.com"
             };
 
-            logSystem("[API-ENGINE]: Iniezione pacchetto cifrato verso l'endpoint...");
             Process process = new ProcessBuilder(osCommand).redirectErrorStream(true).start();
             
             StringBuilder response = new StringBuilder();
@@ -320,33 +316,34 @@ public class GitAutomationGUI extends JFrame {
                 }
             }
             process.waitFor();
-            String rawOutput = response.toString();
+            String jsonResponse = response.toString().trim();
 
-            // Estrazione sicura del clone_url tramite regex
+            // Estrazione sicura del clone_url tramite espressione regolare nativa
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\"clone_url\"\\s*:\\s*\"([^\"]+)\"");
-            java.util.regex.Matcher matcher = pattern.matcher(rawOutput);
+            java.util.regex.Matcher matcher = pattern.matcher(jsonResponse);
 
             if (matcher.find()) {
                 String cloneUrl = matcher.group(1).trim();
-                logSystem("[API-SUCCESS]: Repository remota intercettata con successo!");
+                logSystem("[API-GITHUB] URL clonato intercettato con successo!");
                 return cloneUrl;
-            }
-
-            // Analisi dell'intestazione per stanare i blocchi di rete
-            if (rawOutput.contains("HTTP/1.1 401") || rawOutput.contains("Bad credentials")) {
-                logSystem("[API-ERROR]: Autenticazione fallita. Controlla il Token PAT.");
-            } else if (rawOutput.contains("HTTP/1.1 422") || rawOutput.contains("already exists")) {
-                logSystem("[API-ERROR]: Nome già in uso. La repo '" + repoName + "' esiste già su GitHub.");
+            } 
+            
+            if (jsonResponse.contains("Bad credentials")) {
+                logSystem("[API-ERROR]: Token non valido o scaduto.");
+            } else if (jsonResponse.contains("already exists")) {
+                logSystem("[API-ERROR]: Errore! Una repository con questo nome esiste già.");
+            } else if (jsonResponse.contains("Requires authentication") || jsonResponse.contains("Not Found")) {
+                logSystem("[API-ERROR]: Accesso negato. Controlla se il Token ha i permessi 'repo'.");
             } else {
-                logSystem("[API-ERROR]: Intercettazione di rete rilevata.");
-                String[] lines = rawOutput.split("\n");
+                logSystem("[API-ERROR]: Risposta imprevista da GitHub.");
+                String[] lines = jsonResponse.split("\n");
                 if (lines.length > 0) {
-                    logConsoleRaw("  [STATO SERVER]: " + lines[0]);
+                    // FIXATO: Ora estrae la stringa in modo sicuro usando l'indice zero senza rompere il compilatore
+                    logConsoleRaw("  [DEBUG-SERVER]: " + lines[0]); 
                 }
             }
-
         } catch (Exception e) {
-            logSystem("[SYSTEM-CRASH]: Errore nell'esecuzione dell'engine: " + e.getMessage());
+            logSystem("[API-EXCEPTION]: Errore critico di bypass: " + e.getMessage());
         }
         return null;
     }
@@ -502,9 +499,6 @@ public class GitAutomationGUI extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            GitAutomationGUI gui = new GitAutomationGUI();
-            gui.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new GitAutomationGUI().setVisible(true));
     }
 }
