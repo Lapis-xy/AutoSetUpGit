@@ -1,0 +1,25 @@
+# File di sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Compilati e dipendenze Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+build/
+
+# IDEs
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# Configi e log
+*.log
+.env
