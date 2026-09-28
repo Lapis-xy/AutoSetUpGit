@@ -190,8 +190,8 @@ public class GitAutomationGUI extends JFrame {
             return;
         }
 
-        if (repoUrl.isEmpty() && token.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ERRORE: La creazione automatica richiede il Token di GitHub.", "System Alert", JOptionPane.ERROR_MESSAGE);
+        if (token.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "ERRORE: Il Token di GitHub è obbligatorio per l'autenticazione API.", "System Alert", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -216,6 +216,7 @@ public class GitAutomationGUI extends JFrame {
             try {
                 String targetRepoUrl = repoUrl;
 
+                // CASO 1: Creazione nuova repository
                 if (targetRepoUrl.isEmpty() && !newRepoName.isEmpty()) {
                     logSystem("[API-GITHUB] Richiesta creazione remota attiva: " + newRepoName);
                     targetRepoUrl = createGitHubRepository(newRepoName, isPrivate, token);
@@ -223,6 +224,11 @@ public class GitAutomationGUI extends JFrame {
                         throw new RuntimeException("Creazione remota fallita.");
                     }
                     logSystem("[API-GITHUB] Repository online generata!");
+                } 
+                // CASO 2: URL esistente -> Sincronizza la privacy su GitHub prima del push locale
+                else if (!targetRepoUrl.isEmpty()) {
+                    logSystem("[API-GITHUB] Sincronizzazione visibilità per repository esistente...");
+                    updateRepositoryVisibility(targetRepoUrl, isPrivate, token);
                 }
 
                 String finalPushUrl = targetRepoUrl;
@@ -285,19 +291,65 @@ public class GitAutomationGUI extends JFrame {
             }
         }).start();
     }
+    private void updateRepositoryVisibility(String repoUrl, boolean isPrivate, String token) {
+        try {
+            String cleanUrl = repoUrl.replace("https://github.com", "").replace(".git", "");
+            String[] parts = cleanUrl.split("/");
+            if (parts.length < 2) {
+                logSystem("[API-ERROR]: Impossibile decodificare l'URL della repository per modificare la privacy.");
+                return;
+            }
+            String owner = parts[0];
+            String repoName = parts[1];
+
+            String privateValue = isPrivate ? "true" : "false";
+            String jsonPayload = "{\"private\":" + privateValue + "}";
+
+            // Comando PATCH ufficiale API GitHub
+            String[] osCommand = {
+                "curl", "-i", "-s", "-X", "PATCH",
+                "-H", "Authorization: token " + token,
+                "-H", "Accept: application/vnd.github.v3+json",
+                "-H", "User-Agent: Mozilla/5.0 (X11; Linux x86_64)",
+                "-H", "Content-Type: application/json",
+                "-d", jsonPayload,
+                "https://github.com" + owner + "/" + repoName
+            };
+
+            Process process = new ProcessBuilder(osCommand).redirectErrorStream(true).start();
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "utf-8"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line).append("\n");
+                }
+            }
+            process.waitFor();
+            String rawOutput = response.toString();
+
+            if (rawOutput.contains("HTTP/1.1 200") || rawOutput.contains("\"private\": " + privateValue)) {
+                logSystem("[API-SUCCESS]: Visibilità aggiornata a [" + (isPrivate ? "PRIVATA" : "PUBBLICA") + "] su GitHub!");
+            } else {
+                logSystem("[API-ERROR]: Mancata sincronizzazione privacy. Verifica permessi Token.");
+                String[] lines = rawOutput.split("\n");
+                if (lines.length > 0) {
+                    logConsoleRaw("  [DETTAGLIO-SERVER]: " + java.util.Arrays.toString(lines));
+                }
+            }
+        } catch (Exception e) {
+            logSystem("[API-EXCEPTION]: Errore durante il cambio privacy: " + e.getMessage());
+        }
+    }
+
     private String createGitHubRepository(String repoName, boolean isPrivate, String token) {
         try {
             logSystem("[AGGIRO-RETE]: Generazione repository tramite modulo di sistema nativo...");
             
-            // Imposta in modo pulito il valore booleano della privacy per l'API di GitHub
             String privateValue = isPrivate ? "true" : "false";
             String jsonPayload = "{\"name\":\"" + repoName + "\",\"private\":" + privateValue + "}";
             
-            // Chiamata curl mascherata per eludere le restrizioni o i proxy di rete locali
             String[] osCommand = {
-                "curl", 
-                "-i", 
-                "-s", 
+                "curl", "-i", "-s",
                 "-H", "Authorization: token " + token, 
                 "-H", "Accept: application/vnd.github.v3+json",
                 "-H", "User-Agent: Mozilla/5.0 (X11; Linux x86_64)",
@@ -307,7 +359,6 @@ public class GitAutomationGUI extends JFrame {
             };
 
             Process process = new ProcessBuilder(osCommand).redirectErrorStream(true).start();
-            
             StringBuilder response = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "utf-8"))) {
                 String line;
@@ -318,7 +369,6 @@ public class GitAutomationGUI extends JFrame {
             process.waitFor();
             String jsonResponse = response.toString().trim();
 
-            // Estrazione sicura del clone_url tramite espressione regolare nativa
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\"clone_url\"\\s*:\\s*\"([^\"]+)\"");
             java.util.regex.Matcher matcher = pattern.matcher(jsonResponse);
 
@@ -338,8 +388,7 @@ public class GitAutomationGUI extends JFrame {
                 logSystem("[API-ERROR]: Risposta imprevista da GitHub.");
                 String[] lines = jsonResponse.split("\n");
                 if (lines.length > 0) {
-                    // FIXATO: Ora estrae la stringa in modo sicuro usando l'indice zero senza rompere il compilatore
-                    logConsoleRaw("  [DEBUG-SERVER]: " + lines[0]); 
+                    logConsoleRaw("  [DEBUG-SERVER]: " + java.util.Arrays.toString(lines)); 
                 }
             }
         } catch (Exception e) {
@@ -378,7 +427,6 @@ public class GitAutomationGUI extends JFrame {
             : new String[]{"/bin/sh", "-c", command};
 
         Process process = new ProcessBuilder(osCommand).redirectErrorStream(true).start();
-        
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -388,7 +436,6 @@ public class GitAutomationGUI extends JFrame {
                 logConsoleRaw("  " + line);
             }
         }
-
         int exitCode = process.waitFor();
         if (exitCode != 0 && !command.contains("git commit")) { 
             throw new RuntimeException("Comando fallito.");
@@ -458,47 +505,6 @@ public class GitAutomationGUI extends JFrame {
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
     }
+private JTextField createConsoleTextField(String defaultText) {JTextField textField = new JTextField(defaultText);textField.setFont(FONT_MONO);textField.setBackground(BG_INPUT);textField.setForeground(TEXT_GREEN);textField.setCaretColor(TEXT_GREEN);textField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BG_DARK, 1),BorderFactory.createEmptyBorder(5, 5, 5, 5)));textField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));textField.setAlignmentX(Component.LEFT_ALIGNMENT);return textField;}private void styleSecureField(JPasswordField passwordField) {passwordField.setFont(FONT_MONO);passwordField.setBackground(BG_INPUT);passwordField.setForeground(TEXT_GREEN);passwordField.setCaretColor(TEXT_GREEN);passwordField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BG_DARK, 1),BorderFactory.createEmptyBorder(5, 5, 5, 5)));passwordField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);}private Border createConsoleBorder(String title) {Border line = BorderFactory.createLineBorder(BG_INPUT, 1);TitledBorder titled = BorderFactory.createTitledBorder(line, title);titled.setTitleFont(FONT_MONO_BOLD);titled.setTitleColor(TEXT_CYAN);return BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5),titled);}public static void main(String[] args) {SwingUtilities.invokeLater(() -> new GitAutomationGUI().setVisible(true));
 
-    private JTextField createConsoleTextField(String defaultText) {
-        JTextField textField = new JTextField(defaultText);
-        textField.setFont(FONT_MONO);
-        textField.setBackground(BG_INPUT);
-        textField.setForeground(TEXT_GREEN);
-        textField.setCaretColor(TEXT_GREEN);
-        textField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BG_DARK, 1),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        textField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        textField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return textField;
-    }
-
-    private void styleSecureField(JPasswordField passwordField) {
-        passwordField.setFont(FONT_MONO);
-        passwordField.setBackground(BG_INPUT);
-        passwordField.setForeground(TEXT_GREEN);
-        passwordField.setCaretColor(TEXT_GREEN);
-        passwordField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(BG_DARK, 1),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        passwordField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
-    }
-
-    private Border createConsoleBorder(String title) {
-        Border line = BorderFactory.createLineBorder(BG_INPUT, 1);
-        TitledBorder titled = BorderFactory.createTitledBorder(line, title);
-        titled.setTitleFont(FONT_MONO_BOLD);
-        titled.setTitleColor(TEXT_CYAN);
-        return BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(5, 5, 5, 5),
-            titled
-        );
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new GitAutomationGUI().setVisible(true));
-    }
-}
+}}
