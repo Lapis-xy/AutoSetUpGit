@@ -1,5 +1,6 @@
 package com.example;
 
+// Import standard di sistema e GUI (Nessuna libreria esterna richiesta)
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
@@ -7,6 +8,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.util.Date;
 public class GitAutomationGUI extends JFrame {
 
     private JTextField txtRepoUrl;
+    private JTextField txtNewRepoName;
+    private JCheckBox chkPrivate;
     private JPasswordField txtToken;
     private JTextField txtCommitMessage;
     private JTextArea txtTerminalLog;
@@ -24,7 +28,10 @@ public class GitAutomationGUI extends JFrame {
     private JLabel lblStatusIndicator;
     private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
-    // Palette Colori Console 100% Dark - Nessun Elemento Bianco Standard
+    // File di memorizzazione del Token sul Desktop Linux
+    private static final String DESKTOP_TOKEN_FILE = "/home/informatica/Desktop/autogit_token.txt";
+
+    // Palette Colori Console 100% Dark
     private static final Color BG_DARK = new Color(12, 12, 12);
     private static final Color BG_PANEL = new Color(20, 20, 20);
     private static final Color BG_INPUT = new Color(30, 30, 30);
@@ -42,19 +49,19 @@ public class GitAutomationGUI extends JFrame {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception ignored) {}
 
-        setTitle("autogitupSetup");
-        setSize(855, 600);
+        setTitle("autogitupSetup - Native Core Engine");
+        setSize(950, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(BG_DARK);
         setLayout(new BorderLayout(10, 10));
 
-        // --- 1. HEADER (Titolo Console) ---
+        // --- HEADER (Titolo Console) ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(BG_DARK);
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BG_INPUT));
         
-        JLabel lblTitle = new JLabel(" [SYSTEM@AUTOMATION-BUS]:~ autogitupSetup --run");
+        JLabel lblTitle = new JLabel(" [SYSTEM@AUTOMATION-BUS]:~ autogitupSetup --native-mode");
         lblTitle.setFont(FONT_MONO_BOLD);
         lblTitle.setForeground(TEXT_CYAN);
         lblTitle.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -67,32 +74,37 @@ public class GitAutomationGUI extends JFrame {
         headerPanel.add(lblStatusIndicator, BorderLayout.EAST);
         add(headerPanel, BorderLayout.NORTH);
 
-        // --- 2. PANNELLO CENTRALE (Configurazione + Terminale) ---
+        // --- PANNELLO CENTRALE ---
         JPanel centerPanel = new JPanel(new GridLayout(1, 2, 10, 0));
         centerPanel.setBackground(BG_DARK);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // PANNELLO SINISTRO: Input Controlli
         JPanel leftPanel = new JPanel();
         leftPanel.setBackground(BG_PANEL);
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBorder(createConsoleBorder(" CONFIG_PARAMETERS "));
 
-        // Input URL
-        JLabel lblRepo = createConsoleLabel("REPOSITORY REMOTE URL:");
+        JLabel lblRepo = createConsoleLabel("REPOSITORY REMOTE URL (Se già esistente):");
         txtRepoUrl = createConsoleTextField("");
         
-        // Input Token
-        JLabel lblToken = createConsoleLabel("PERSONAL ACCESS TOKEN (PAT) [OPZIONALE]:");
+        JLabel lblNewRepo = createConsoleLabel("OPPURE CREA NUOVA REPO (Via Modulo Nativo):");
+        txtNewRepoName = createConsoleTextField("");
+        
+        chkPrivate = new JCheckBox("Repository Privata");
+        chkPrivate.setFont(FONT_MONO);
+        chkPrivate.setBackground(BG_PANEL);
+        chkPrivate.setForeground(TEXT_WHITE);
+        chkPrivate.setFocusPainted(false);
+        chkPrivate.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel lblToken = createConsoleLabel("PERSONAL ACCESS TOKEN (PAT) [Richiesto per il Push locale]:");
         txtToken = new JPasswordField();
         styleSecureField(txtToken);
 
-        // Input Commit
         JLabel lblCommit = createConsoleLabel("FIRST COMMIT MESSAGE:");
         txtCommitMessage = createConsoleTextField("Commit Iniziale");
 
-        // Bottone d'azione
-        btnExecute = new JButton("EXECUTE INITIALIZE & PUSH");
+        btnExecute = new JButton("EXECUTE AUTOMATION ENGINE");
         btnExecute.setFont(FONT_MONO_BOLD);
         btnExecute.setBackground(BG_INPUT);
         btnExecute.setForeground(TEXT_GREEN);
@@ -102,12 +114,11 @@ public class GitAutomationGUI extends JFrame {
         btnExecute.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnExecute.addActionListener(this::handleGitAutomation);
 
-        // Box informativo di sistema
         JTextArea txtInfoBox = new JTextArea(
-            "Target Engine: Git Core v3\n" +
+            "Target Engine: Native Linux Curl Bypass\n" +
             "Branch Policy: default -> [main]\n" +
-            "Auth Module: Token Injection Safe Mode active\n" +
-            "Status: Ready to encrypt and inject credentials."
+            "Session Sync: Sandbox indipendente (No Playwright)\n" +
+            "Status: Pronto ad eludere i filtri di rete."
         );
         txtInfoBox.setFont(FONT_MONO);
         txtInfoBox.setForeground(TEXT_MUTED);
@@ -115,27 +126,33 @@ public class GitAutomationGUI extends JFrame {
         txtInfoBox.setEditable(false);
         txtInfoBox.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(BG_INPUT, 1),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)
+            BorderFactory.createEmptyBorder(6, 6, 6, 6)
         ));
         txtInfoBox.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         leftPanel.add(lblRepo);
-        leftPanel.add(Box.createVerticalStrut(5)); // Errore fisso qui
+        leftPanel.add(Box.createVerticalStrut(3));
         leftPanel.add(txtRepoUrl);
-        leftPanel.add(Box.createVerticalStrut(12));
+        leftPanel.add(Box.createVerticalStrut(10));
+        leftPanel.add(lblNewRepo);
+        leftPanel.add(Box.createVerticalStrut(3));
+        leftPanel.add(txtNewRepoName);
+        leftPanel.add(Box.createVerticalStrut(3));
+        leftPanel.add(chkPrivate);
+        leftPanel.add(Box.createVerticalStrut(10));
         leftPanel.add(lblToken);
-        leftPanel.add(Box.createVerticalStrut(5));
+        leftPanel.add(Box.createVerticalStrut(3));
         leftPanel.add(txtToken);
-        leftPanel.add(Box.createVerticalStrut(12));
+        leftPanel.add(Box.createVerticalStrut(10));
         leftPanel.add(lblCommit);
-        leftPanel.add(Box.createVerticalStrut(5));
+        leftPanel.add(Box.createVerticalStrut(3));
+        txtCommitMessage = createConsoleTextField("Commit Iniziale");
         leftPanel.add(txtCommitMessage);
-        leftPanel.add(Box.createVerticalStrut(20));
+        leftPanel.add(Box.createVerticalStrut(15));
         leftPanel.add(btnExecute);
-        leftPanel.add(Box.createVerticalStrut(20));
+        leftPanel.add(Box.createVerticalStrut(15));
         leftPanel.add(txtInfoBox);
 
-        // PANNELLO DESTRO: Terminale Output log
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBackground(BG_PANEL);
         rightPanel.setBorder(createConsoleBorder(" LIVE_TERMINAL_LOG "));
@@ -146,8 +163,6 @@ public class GitAutomationGUI extends JFrame {
         txtTerminalLog.setForeground(TEXT_GREEN);
         txtTerminalLog.setFont(FONT_MONO);
         txtTerminalLog.setCaretColor(TEXT_GREEN);
-        
-        // Attiva il ritorno a capo automatico ed esclude la barra orizzontale
         txtTerminalLog.setLineWrap(true);
         txtTerminalLog.setWrapStyleWord(true);
         
@@ -162,15 +177,18 @@ public class GitAutomationGUI extends JFrame {
         centerPanel.add(rightPanel);
         add(centerPanel, BorderLayout.CENTER);
 
-        logSystem("Console Full Dark caricata. Moduli di sicurezza attivi.");
+        loadTokenFromDesktop();
+        logSystem("Console Native Core caricata. Pronta all'uso.");
     }
     private void handleGitAutomation(ActionEvent e) {
         String repoUrl = txtRepoUrl.getText().trim();
+        String newRepoName = txtNewRepoName.getText().trim();
         String token = new String(txtToken.getPassword()).trim();
         String commitMsg = txtCommitMessage.getText().trim();
+        boolean isPrivate = chkPrivate.isSelected();
 
-        if (repoUrl.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ERRORE: Inserire un endpoint URI remoto valido.", "Console System Alert", JOptionPane.ERROR_MESSAGE);
+        if (repoUrl.isEmpty() && newRepoName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "ERRORE: Inserisci un URL remoto o un nome per la nuova repo.", "System Alert", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -178,13 +196,8 @@ public class GitAutomationGUI extends JFrame {
             commitMsg = "Commit Iniziale";
         }
 
-        String targetPushUrl = repoUrl;
         if (!token.isEmpty()) {
-            if (repoUrl.startsWith("https://")) {
-                targetPushUrl = repoUrl.replace("https://", "https://" + token + "@");
-            } else {
-                logSystem("[WARNING] Il token funziona solo con URL HTTPS. Procedo senza iniezione.");
-            }
+            saveTokenToDesktop(token);
         }
 
         btnExecute.setEnabled(false);
@@ -195,19 +208,30 @@ public class GitAutomationGUI extends JFrame {
         
         txtTerminalLog.setText(""); 
         String finalCommitMsg = commitMsg;
-        String finalPushUrl = targetPushUrl;
-        boolean hasToken = !token.isEmpty();
 
         new Thread(() -> {
             try {
-                logSystem("Verifica moduli locali in corso...");
+                String targetRepoUrl = repoUrl;
 
+                // Se l'utente vuole creare una nuova repository, attiva il modulo nativo Linux
+                if (targetRepoUrl.isEmpty() && !newRepoName.isEmpty()) {
+                    logSystem("[DETECTOR]: Richiesta generazione remota intercettata.");
+                    targetRepoUrl = createGitHubRepository(newRepoName, isPrivate);
+                    if (targetRepoUrl == null) {
+                        throw new RuntimeException("Creazione tramite modulo nativo fallita.");
+                    }
+                }
+
+                String finalPushUrl = targetRepoUrl;
+                if (!token.isEmpty() && targetRepoUrl.startsWith("https://")) {
+                    finalPushUrl = targetRepoUrl.replace("https://", "https://" + token + "@");
+                }
+
+                logSystem("Verifica moduli Git locali...");
                 File gitFolder = new File(".git");
                 if (!gitFolder.exists()) {
-                    logSystem("Nessun modulo .git locale. Eseguo init...");
+                    logSystem("Inizializzazione modulo .git locale...");
                     runCommand("git init");
-                } else {
-                    logSystem("Modulo .git locale già inizializzato.");
                 }
 
                 setupGitignore();
@@ -216,24 +240,18 @@ public class GitAutomationGUI extends JFrame {
                 logSystem("Aggiornamento area di staging (git add)...");
                 runCommand("git add .");
 
-                logSystem("Iniezione del blocco di commit...");
+                logSystem("Generazione blocco commit...");
                 runCommand("git commit -m \"" + finalCommitMsg + "\"");
 
-                logSystem("Riallineamento branch di sviluppo -> [main]");
+                logSystem("Riallineamento branch principale -> [main]");
                 runCommand("git branch -M main");
 
-                logSystem("Pulizia e binding dell'endpoint remoto...");
+                logSystem("Binding endpoint remoto...");
                 executeQuietly("git remote remove origin");
-                runCommand("git remote add origin " + repoUrl);
+                runCommand("git remote add origin " + targetRepoUrl);
 
                 logSystem("Iniezione pacchetti verso il server remoto...");
-                if (hasToken) {
-                    logSystem("[AUTH] Utilizzo Personal Access Token per autenticazione silenziosa.");
-                    runCommand("git push -u " + finalPushUrl + " main");
-                } else {
-                    logSystem("[AUTH] Nessun token fornito. Attesa credenziali di sistema standard.");
-                    runCommand("git push -u origin main");
-                }
+                runCommand("git push -u " + finalPushUrl + " main");
 
                 logSystem("Sincronizzazione completata con successo!");
                 
@@ -245,7 +263,7 @@ public class GitAutomationGUI extends JFrame {
                 JOptionPane.showMessageDialog(this, "Deploy eseguito con successo!", "Console Core Info", JOptionPane.INFORMATION_MESSAGE);
 
             } catch (Exception ex) {
-                logSystem("ERRORE CRITICO: Procedura interrotta per fallimento del core.");
+                logSystem("ERRORE CRITICO: Sequenza interrotta.");
                 SwingUtilities.invokeLater(() -> {
                     lblStatusIndicator.setText("FAILURE ");
                     lblStatusIndicator.setForeground(ACCENT_RED);
@@ -264,6 +282,99 @@ public class GitAutomationGUI extends JFrame {
             }
         }).start();
     }
+    private String createGitHubRepository(String repoName, boolean isPrivate) {
+        try {
+            logSystem("[SYSTEM-CORE]: Avvio modulo nativo Linux di bypass...");
+            
+            String token = new String(txtToken.getPassword()).trim();
+            if (token.isEmpty()) {
+                logSystem("[API-ERROR]: Personal Access Token mancante nella GUI.");
+                return null;
+            }
+
+            String privateValue = isPrivate ? "true" : "false";
+            String jsonPayload = "{\"name\":\"" + repoName + "\",\"private\":" + privateValue + "}";
+            
+            // Comando curl nativo senza dipendenze esterne
+            String[] osCommand = {
+                "curl",
+                "-i", 
+                "-s", 
+                "-X", "POST",
+                "-H", "Authorization: token " + token,
+                "-H", "Accept: application/vnd.github.v3+json",
+                "-H", "User-Agent: Mozilla/5.0 (X11; Linux x86_64)", 
+                "-H", "Content-Type: application/json",
+                "-d", jsonPayload,
+                "https://github.com"
+            };
+
+            logSystem("[API-ENGINE]: Iniezione pacchetto cifrato verso l'endpoint...");
+            Process process = new ProcessBuilder(osCommand).redirectErrorStream(true).start();
+            
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "utf-8"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line).append("\n");
+                }
+            }
+            process.waitFor();
+            String rawOutput = response.toString();
+
+            // Estrazione sicura del clone_url tramite regex
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\"clone_url\"\\s*:\\s*\"([^\"]+)\"");
+            java.util.regex.Matcher matcher = pattern.matcher(rawOutput);
+
+            if (matcher.find()) {
+                String cloneUrl = matcher.group(1).trim();
+                logSystem("[API-SUCCESS]: Repository remota intercettata con successo!");
+                return cloneUrl;
+            }
+
+            // Analisi dell'intestazione per stanare i blocchi di rete
+            if (rawOutput.contains("HTTP/1.1 401") || rawOutput.contains("Bad credentials")) {
+                logSystem("[API-ERROR]: Autenticazione fallita. Controlla il Token PAT.");
+            } else if (rawOutput.contains("HTTP/1.1 422") || rawOutput.contains("already exists")) {
+                logSystem("[API-ERROR]: Nome già in uso. La repo '" + repoName + "' esiste già su GitHub.");
+            } else {
+                logSystem("[API-ERROR]: Intercettazione di rete rilevata.");
+                String[] lines = rawOutput.split("\n");
+                if (lines.length > 0) {
+                    logConsoleRaw("  [STATO SERVER]: " + lines[0]);
+                }
+            }
+
+        } catch (Exception e) {
+            logSystem("[SYSTEM-CRASH]: Errore nell'esecuzione dell'engine: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private void saveTokenToDesktop(String token) {
+        try (FileWriter writer = new FileWriter(DESKTOP_TOKEN_FILE)) {
+            writer.write(token);
+            logSystem("Token aggiornato e salvato sul Desktop: autogit_token.txt");
+        } catch (IOException e) {
+            logSystem("[WRITE-ERROR] Impossibile scrivere il file del token sul Desktop.");
+        }
+    }
+
+    private void loadTokenFromDesktop() {
+        File tokenFile = new File(DESKTOP_TOKEN_FILE);
+        if (tokenFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(tokenFile))) {
+                String savedToken = reader.readLine();
+                if (savedToken != null && !savedToken.trim().isEmpty()) {
+                    txtToken.setText(savedToken.trim());
+                    logSystem("Token configurato caricato dal file autogit_token.txt sul Desktop.");
+                }
+            } catch (IOException e) {
+                logSystem("[READ-ERROR] Errore durante la lettura del file token sul Desktop.");
+            }
+        }
+    }
+
     private void runCommand(String command) throws Exception {
         String[] osCommand = System.getProperty("os.name").toLowerCase().contains("win") 
             ? new String[]{"cmd.exe", "/c", command} 
@@ -391,6 +502,9 @@ public class GitAutomationGUI extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new GitAutomationGUI().setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            GitAutomationGUI gui = new GitAutomationGUI();
+            gui.setVisible(true);
+        });
     }
 }
