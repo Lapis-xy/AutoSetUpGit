@@ -46,7 +46,7 @@ public class GitAutomationGUI extends JFrame {
         JLabel lblCommit = new JLabel("💬 Messaggio del Primo Commit:");
         lblCommit.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblCommit.setAlignmentX(Component.LEFT_ALIGNMENT);
-        txtCommitMessage = new JTextField("feat: initial commit");
+        txtCommitMessage = new JTextField("feat: Commit iniziale");
         txtCommitMessage.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         txtCommitMessage.setAlignmentX(Component.LEFT_ALIGNMENT);
 
